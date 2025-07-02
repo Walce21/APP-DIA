@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisador de Imagens RGB (PWA)</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="apple-touch-icon" href="icon-192x192.png"> 
+    <meta name="apple-mobile-web-app-status-bar" content="#ffffff">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none; 
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 420px; 
+            overflow: hidden; 
+            border: 1px solid #ccc;
+            background-color: #f0f0f0;
+            cursor: grab;
+        }
+        #imageCanvas, #roiCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #roiCanvas {
+            z-index: 10;
+            cursor: crosshair; 
+        }
+        .table-container {
+            max-height: 350px; 
+        }
+        .table-container::-webkit-scrollbar { width: 6px; height: 6px; }
+        .table-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .table-container::-webkit-scrollbar-thumb { background: #a0aec0; border-radius: 10px; }
+        .table-container::-webkit-scrollbar-thumb:hover { background: #718096; }
+        
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 600px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .modal-content-sm { max-width: 450px; } 
+
+        .close-button { color: #aaa; float: right; font-size: 32px; font-weight: bold; line-height: 1; }
+        .close-button:hover, .close-button:focus { color: #333; text-decoration: none; cursor: pointer; }
+        
+        .tab-button { padding: 0.5rem 0.8rem; margin-bottom: -1px; border: 1px solid transparent; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; font-size: 0.8rem; font-weight: 500; color: #4a5568; cursor: pointer; transition: all 0.2s ease-in-out; white-space: nowrap;}
+        .tab-button:hover { color: #2c5282; border-color: #e2e8f0; }
+        .tab-button.active { color: #2b6cb0; border-color: #e2e8f0 #e2e8f0 #fff; background-color: #fff; }
+        .tab-pane { border: 1px solid #e2e8f0; border-top: none; padding: 0.75rem; background-color: #fff; border-bottom-left-radius: 0.375rem; border-bottom-right-radius: 0.375rem; }
+        
+        .table-sticky-header th { white-space: nowrap; } 
+        
+        .analytical-white-bg { background-color: #e6fffa; }
+        .analytical-white-star-filled { color: #f6e05e; }
+        .analytical-white-star-outline { color: #a0aec0; }
+        .roi-analytical-white-border { stroke: #38a169; stroke-width: 3px !important; }
+
+        #editRoiNameInput, #gammaValueInput, #modalCameraSelect {
+            border: 1px solid #cbd5e0; 
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex flex-col min-h-screen">
+
+    <header class="bg-sky-700 text-white p-4 shadow-md">
+        <h1 class="text-2xl font-semibold text-center">Analisador Digital de Imagens RGB e Sistemas de Cor</h1>
+    </header>
+
+    <main class="flex-grow container mx-auto p-4 flex flex-col lg:flex-row gap-6">
+        <div class="lg:w-1/3 flex flex-col gap-4">
+            <!-- Controles de Imagem e ROI -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-3 border-b pb-2">Controles de Imagem e ROI</h2>
+                <div class="grid grid-cols-1 gap-4 mb-4">
+                    <div>
+                        <label for="imageUpload" class="block text-sm font-medium text-gray-700 mb-1">Importar Imagem do Dispositivo:</label>
+                        <input type="file" id="imageUpload" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 cursor-pointer">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ferramenta ROI:</label>
+                    <div class="flex space-x-2">
+                        <button id="rectRoiButton" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md">Retangular</button>
+                        <button id="circleRoiButton" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md">Circular</button>
+                        <button id="pointerButton" class="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-4 rounded-md">Ponteiro</button>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ações da ROI Selecionada:</label>
+                     <button id="duplicateRoiButton" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-300" disabled>Duplicar ROI</button>
+                </div>
+                 <div class="text-xs text-gray-500 mt-3">
+                    <p><strong>Zoom:</strong> Scroll. <strong>Pan:</strong> Clique e arraste.</p>
+                    <p><strong>Desenhar ROI:</strong> Selecione ferramenta, clique e arraste.</p>
+                    <p><strong>Mover/Redimensionar:</strong> Use "Ponteiro".</p>
+                    <p><strong>Excluir ROI:</strong> 'Delete'/'Backspace' ou botão na tabela.</p>
+                </div>
+            </div>
+             <!-- Painel de Cálculo Analítico -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-3 border-b pb-2">Cálculo Analítico</h2>
+                <div>
+                    <label for="selectEquation" class="block text-sm font-medium text-gray-700 mb-1">Selecionar Equação:</label>
+                    <select id="selectEquation" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 text-sm">
+                        <option value="direct">Forma Direta (R, G, B)</option>
+                        <option value="inverse">Inverso Simples (255 - I)</option>
+                        <option value="diff_white">Diferença com Branco (B - A)</option>
+                        <option value="beer_analogue">Análogo à Lei de Beer (-log(A/B))</option>
+                        <option value="beer_multiplicative">Lei de Beer Multiplicativa (-log(ProdA/ProdB))</option>
+                        <option value="euclidean_norm">Norma Euclidiana da Diferença</option>
+                        <option value="luminance">Intensidade de Luminância</option>
+                        <option value="channel_sum_ratio">Razões Canal / Soma Canais</option>
+                        <option value="channel_ratios">Razões Entre Canais</option>
+                        <option value="general_analytical">Equação Analítica Geral</option>
+                    </select>
+                </div>
+                <div id="gammaInputContainer" class="mt-3 hidden">
+                    <label for="gammaValueInput" class="block text-sm font-medium text-gray-700 mb-1">Valor de Gama (γ):</label>
+                    <input type="number" id="gammaValueInput" value="1.0" step="0.1" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 text-sm">
+                </div>
+                <button id="calculateAnalyticalResponseButton" class="mt-4 w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-md">Calcular Resposta Analítica</button>
+            </div>
+
+
+            <div class="bg-white p-1 rounded-lg shadow flex-grow">
+                 <div id="canvasContainer" class="canvas-container rounded-md">
+                    <canvas id="imageCanvas"></canvas>
+                    <canvas id="roiCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:w-2/3 flex flex-col gap-4">
+            <div class="bg-white p-4 rounded-lg shadow flex-1 flex flex-col">
+                <h2 class="text-xl font-semibold mb-3">Dados das ROIs e Conversões de Cor</h2>
+                
+                <div id="colorTabsContainer" class="mb-0">
+                    <div class="border-b border-gray-300">
+                        <nav class="-mb-px flex space-x-1 sm:space-x-2 overflow-x-auto pb-px" aria-label="Tabs">
+                            <button data-tab="rgb" class="tab-button active">RGB & Detalhes</button>
+                            <button data-tab="hsv" class="tab-button">HSV</button>
+                            <button data-tab="hsl" class="tab-button">HSL</button>
+                            <button data-tab="lab" class="tab-button">CIELAB</button>
+                            <button data-tab="ycbcr" class="tab-button">YCbCr</button>
+                            <button data-tab="analytical" class="tab-button">Resposta Analítica</button>
+                        </nav>
+                    </div>
+                </div>
+
+                <div id="tabContentContainer" class="flex-grow">
+                    <div id="tab-rgb" class="tab-pane">
+                        <div class="table-container flex-grow overflow-auto">
+                            <table id="roiTable-rgb" class="min-w-full divide-y divide-gray-200 text-xs table-sticky-header">
+                                <thead class="bg-gray-100 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">ID</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Nome</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">R</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">G</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">B</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">MédiaRGB</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">DP R</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">DP G</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">DP B</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Pixels</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Formato</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Coords</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Tam/Diâm</th>
+                                        <th class="px-1 py-2 text-center font-semibold text-gray-600" title="Marcar esta ROI como referência de Branco Analítico.">Branco An.</th>
+                                        <th class="px-1 py-2 text-center font-semibold text-gray-600">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roiTableBody-rgb" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="tab-hsv" class="tab-pane hidden">
+                        <div class="table-container flex-grow overflow-auto">
+                            <table id="roiTable-hsv" class="min-w-full divide-y divide-gray-200 text-xs table-sticky-header">
+                                <thead class="bg-gray-100 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Nome ROI</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">H (0-360)</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">S (0-100%)</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">V (0-100%)</th>
+                                        <th class="px-2 py-2 text-center font-semibold text-gray-600">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roiTableBody-hsv" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="tab-hsl" class="tab-pane hidden">
+                         <div class="table-container flex-grow overflow-auto">
+                            <table id="roiTable-hsl" class="min-w-full divide-y divide-gray-200 text-xs table-sticky-header">
+                                <thead class="bg-gray-100 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Nome ROI</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">H (0-360)</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">S (0-100%)</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">L (0-100%)</th>
+                                        <th class="px-2 py-2 text-center font-semibold text-gray-600">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roiTableBody-hsl" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="tab-lab" class="tab-pane hidden">
+                        <div class="table-container flex-grow overflow-auto">
+                            <table id="roiTable-lab" class="min-w-full divide-y divide-gray-200 text-xs table-sticky-header">
+                                <thead class="bg-gray-100 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Nome ROI</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">L*</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">a*</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">b*</th>
+                                        <th class="px-2 py-2 text-center font-semibold text-gray-600">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roiTableBody-lab" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="tab-ycbcr" class="tab-pane hidden">
+                        <div class="table-container flex-grow overflow-auto">
+                            <table id="roiTable-ycbcr" class="min-w-full divide-y divide-gray-200 text-xs table-sticky-header">
+                                <thead class="bg-gray-100 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Nome ROI</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Y</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Cb</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Cr</th>
+                                        <th class="px-2 py-2 text-center font-semibold text-gray-600">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roiTableBody-ycbcr" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="tab-analytical" class="tab-pane hidden">
+                        <div class="table-container flex-grow overflow-auto">
+                            <table id="roiTable-analytical" class="min-w-full divide-y divide-gray-200 text-xs table-sticky-header">
+                                <thead class="bg-gray-100 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Nome ROI</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Equação</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Canal</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Resposta</th>
+                                        <th class="px-2 py-2 text-left font-semibold text-gray-600">Gama (γ)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roiTableBody-analytical" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                     <div id="noRoiMessageContainer" class="text-center p-4 text-gray-500">Nenhuma ROI selecionada.</div>
+                </div>
+                <button id="exportCsvButton" class="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-300" disabled>Exportar Todos os Dados para CSV</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para Mensagens Gerais -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeGeneralModalButton">&times;</span>
+            <p id="modalMessageText" class="text-gray-700"></p>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Nome da ROI -->
+    <div id="editRoiNameModal" class="modal">
+        <div class="modal-content modal-content-sm">
+            <span class="close-button" id="closeEditRoiNameModalButton">&times;</span>
+            <h3 class="text-lg font-semibold mb-3 text-gray-800">Editar Nome da ROI</h3>
+            <input type="text" id="editRoiNameInput" class="mb-2" placeholder="Novo nome para a ROI">
+            <p id="editRoiNameError" class="text-xs text-red-500 mb-3"></p>
+            <div class="flex justify-end space-x-2">
+                <button id="cancelEditRoiNameButton" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancelar</button>
+                <button id="saveRoiNameButton" class="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700">Salvar Nome</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-sky-700 text-white text-center p-3 text-sm">
+        <p>&copy; <span id="currentYear"></span> Seu Projeto de Doutorado. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="app.js" defer></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swPath = './service-worker.js'; // Caminho relativo ao index.html
+                
+                if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') {
+                    console.warn(`[SW] Registro do Service Worker pulado. Protocolo atual: ${window.location.protocol}. Service Workers requerem HTTP ou HTTPS (localhost é tratado como seguro). Esta aplicação deve funcionar normalmente, mas a funcionalidade PWA offline pode não estar disponível neste ambiente de pré-visualização.`);
+                } else {
+                    console.log('[SW] Tentando registrar Service Worker. Caminho:', swPath, 'Localização atual:', window.location.href);
+                    navigator.serviceWorker.register(swPath) 
+                        .then((registration) => {
+                            console.log('Service Worker registrado com sucesso, escopo:', registration.scope);
+                        })
+                        .catch((error) => {
+                            console.error('Falha ao registrar o Service Worker:', error);
+                            console.error('Detalhes do Erro:', error.name, error.message, error.stack);
+                        });
+                }
+            });
+        } else {
+            console.warn('[SW] Service Worker não é suportado neste navegador.');
+        }
+    </script>
+</body>
+</html>

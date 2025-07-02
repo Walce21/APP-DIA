@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisador de Imagens Digital</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0369a1">
+    <link rel="apple-touch-icon" href="/icon-192x192.png">
+    <link rel="icon" sizes="512x512" href="/icon-512x512.png" type="image/png">
+    <link rel="icon" href="/favicon-v2.ico?v=2" type="image/x-icon">
+    <meta name="apple-mobile-web-app-status-bar" content="#ffffff">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/katex/katex.min.css">
+    <script defer src="/katex/katex.min.js"></script>
+    <script defer src="/katex/contrib/auto-render.min.js"></script>
+
+
+    <script src="/chart.min.js"></script>
+    <script src="/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="/exceljs.min.js"></script>
+    <script src="/jspdf.umd.min.js"></script>
+    <script src="/jspdf.autotable.min.js"></script>
+    <script async src="/opencv.js"></script>
+
+    <script src="/js/log.js"></script>
+    <script src="/js/config.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/qualityParams.js"></script>
+      <script type="module" crossorigin src="/assets/index-BLq7IkyI.js"></script>
+      <link rel="stylesheet" crossorigin href="/assets/index-BmASS2PF.css">
+    </head>
+<body class="bg-gray-100 text-gray-800 flex flex-col min-h-screen">
+
+    <header class="bg-sky-700 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="w-10"></div> <h1 class="text-xl sm:text-2xl font-semibold text-center flex-grow">Analisador Digital de Imagens</h1>
+            <div class="w-10 flex justify-end">
+                <button id="settingsButton" title="Configurações do Relatório" class="p-2 rounded-full hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0 3.35a1.724 1.724 0 001.066 2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-layout" class="flex-grow container mx-auto p-4 flex flex-col lg:flex-row gap-6">
+        
+        <div id="left-column" class="lg:w-1/3 flex flex-col gap-4">
+            
+            <div id="main-controls-wrapper" data-id-for-focus-mode="mainControlsPanel" class="flex flex-col gap-4">
+                <div id="image-controls-panel" class="bg-white p-4 rounded-lg shadow">
+                    <div class="flex justify-between items-center mb-3">
+                         <h2 class="text-lg font-semibold">Controles da Imagem</h2>
+                         <button id="mainControlsInfoButton" title="Ajuda sobre Controles da Imagem" class="control-icon-button info-button">
+                            <svg class="w-5 h-5 text-sky-700" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM8 4a.905.905 0 0 1 .9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995A.905.905 0 0 1 8 4zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
+                        </button>
+                    </div>
+
+                    <input type="file" id="imageUpload" accept="image/*" class="hidden">
+                    
+                    <div class="mb-3">
+                        <span id="fileNameDisplay" class="text-xs text-gray-600 truncate" title="Nenhum arquivo">Nenhum arquivo</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <label for="imageUpload" class="action-button bg-sky-600 hover:bg-sky-700 text-white flex items-center justify-center gap-2 cursor-pointer rounded-md">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>Carregar</span>
+                        </label>
+                        <button id="deleteImageButton" class="action-button bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2 rounded-md" disabled>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span>Excluir</span>
+                        </button>
+                        <button id="rotateImageButton" title="Girar 90°" class="action-button bg-indigo-500 hover:bg-indigo-600 text-white flex items-center justify-center gap-2 rounded-md image-action-button" disabled>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5m11 5v-5h-5M4 4l5 5m11 5l-5-5M4 16v4m0 0h4m-4 0l5-5m11 1v-4m0 0h-4m4 0l-5 5"></path></svg>
+                            <span>Girar</span>
+                        </button>
+                        <button id="resetViewButton" title="Restaurar Zoom e Posição" class="action-button bg-indigo-500 hover:bg-indigo-600 text-white flex items-center justify-center gap-2 rounded-md image-action-button" disabled>
+                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 10l-6 6m6-6l6 6"></path></svg>
+                           <span>Restaurar</span>
+                        </button>
+                    </div>
+
+                    <p id="pwaInstallInfo" class="p-2 mt-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-md hidden text-sm">
+                        Instale este aplicativo para acesso rápido e uso offline!
+                        <button id="installPwaButton" class="ml-2 font-bold underline">Instalar</button>
+                    </p>
+                </div>
+                
+                <div id="tools-panel" class="bg-white p-4 rounded-lg shadow">
+                    <div class="panel-content-wrapper">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-semibold">Ferramentas</h3>
+                            <button id="toolsInfoButton" title="Ajuda sobre Ferramentas e Canvas" class="control-icon-button info-button">
+                                <svg class="w-5 h-5 text-sky-700" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM8 4a.905.905 0 0 1 .9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995A.905.905 0 0 1 8 4zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
+                            </button>
+                        </div>
+                        <div id="roiToolsContainer" class="flex space-x-2 mb-3">
+                            <button id="pointerButton" class="flex-1 tool-button border border-transparent bg-sky-600 text-white hover:bg-sky-700 rounded-md py-2 text-sm font-medium">Ponteiro</button>
+                            <button id="rectRoiButton" class="flex-1 tool-button border border-transparent bg-sky-600 text-white hover:bg-sky-700 rounded-md py-2 text-sm font-medium">Retângulo</button>
+                            <button id="circleRoiButton" class="flex-1 tool-button border border-transparent bg-sky-600 text-white hover:bg-sky-700 rounded-md py-2 text-sm font-medium">Círculo</button>
+                        </div>
+                        <div id="detectionDropdownContainer" class="relative">
+                            <button id="detectionMenuButton" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-400 flex items-center justify-between" disabled>
+                                <span>Detecção Automática 🪄</span>
+                                <svg class="w-5 h-5 ml-2 -mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                            </button>
+                            <div id="detectionMenu" class="hidden absolute right-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                                <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="detectionMenuButton">
+                                    <a href="#" id="startGridAnalysisButton" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem">Analisar Grade (Microplaca)</a>
+                                    <a href="#" id="startAreaDetectionButton" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem">Detectar em Área (Fita de Teste)</a>
+                                    <a href="#" id="startAdvancedDetectionButton" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem">Configuração Avançada (Imagem Inteira)</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+            </div>
+            
+            <div id="canvas-wrapper" class="bg-white p-1 rounded-lg shadow">
+                <div id="canvasContainer" class="canvas-container rounded-md">
+                    <div id="canvas-controls-overlay" class="absolute top-2 left-2 z-30 space-x-1">
+                        <button id="focusModeButton" class="control-icon-button overlay-button rounded-md" title="Modo Foco">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1v4m0 0h-4m4 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 0h-4m4 0l-5-5"></path></svg>
+                        </button>
+                        <button id="magnifierToggleButton" class="control-icon-button overlay-button rounded-md" title="Ativar/Desativar Lupa">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </button>
+                        <button id="viewLockButton" class="control-icon-button overlay-button rounded-md" title="Bloquear Zoom/Pan">
+                            <svg id="viewLockIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        </button>
+                    </div>
+                    <canvas id="imageCanvas"></canvas>
+                    <canvas id="roiCanvas"></canvas>
+                    <div id="magnifier-container" class="hidden absolute top-4 right-4 w-32 h-32 pointer-events-none z-20">
+                        <canvas id="magnifier-canvas" class="w-full h-full rounded-full border-2 border-sky-600 bg-white shadow-lg"></canvas>
+                        <div id="magnifier-crosshair"></div>
+                    </div>
+                 </div>
+            </div>
+
+            <div id="roi-tools-panel" data-id-for-panel="dynamicActionsPanel" class="bg-white p-4 rounded-lg shadow">
+                <div class="panel-content-wrapper">
+                    <div class="flex justify-between items-center mb-3 border-b pb-2">
+                        <h3 class="text-lg font-semibold text-gray-800">Ferramentas ROI</h3>
+                        <button id="roiActionsInfoButton" title="Ajuda sobre Ações em ROIs" class="control-icon-button info-button">
+                            <svg class="w-5 h-5 text-sky-700" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM8 4a.905.905 0 0 1 .9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995A.905.905 0 0 1 8 4zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
+                        </button>
+                    </div>
+                    
+                    <fieldset id="dynamicActionsFieldset" class="space-y-3" disabled>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="setAsSampleButton" class="action-button bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-md">Definir Amostra</button>
+                            <button id="setAnalyticalWhiteButton" class="action-button bg-green-500 hover:bg-green-600 text-white font-medium rounded-md">Definir Branco</button>
+                            <button id="duplicateSelectedRoiButton" class="action-button bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-md">Duplicar</button>
+                            <button id="deleteSelectedRoiButton" class="action-button bg-red-500 hover:bg-red-600 text-white font-medium rounded-md">Excluir</button>
+                        </div>
+                        
+                        <div class="pt-2">
+                            <div class="flex justify-between items-center mb-1">
+                                <label for="bulkResizeSlider" class="text-xs font-medium text-gray-700">Redimensionar Seleção:</label>
+                                <span id="bulkResizeValue" class="text-xs font-mono font-semibold text-gray-900 bg-gray-200 px-2 py-0.5 rounded-md">100%</span>
+                            </div>
+                            <input type="range" id="bulkResizeSlider" min="50" max="200" value="100" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer disabled:opacity-50">
+                        </div>
+
+                        <div class="pt-2 grid grid-cols-2 gap-2">
+                            <button id="bulkLockPositionButton" class="action-button bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-md">Travar Posição</button>
+                            <button id="bulkLockSizeButton" class="action-button bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-md">Travar Tamanho</button>
+                        </div>
+                    </fieldset>
+                    <div class="mt-3 flex items-center">
+                        <button id="bulkOrderButton" class="action-button bg-indigo-500 hover:bg-indigo-600 text-white font-medium flex-grow rounded-md" disabled>Ordenar ROIs</button>
+                        <button id="orderRoisInfoButton" class="control-icon-button info-button ml-2" title="Ajuda sobre Ordenação">
+                            <svg class="w-5 h-5 text-sky-700" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM8 4a.905.905 0 0 1 .9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995A.905.905 0 0 1 8 4zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                </div>
+        </div>
+
+        <div id="right-column" class="lg:w-2/3 flex flex-col gap-4">
+             <div class="bg-white p-4 rounded-lg shadow flex-1 flex flex-col">
+                
+                 <div id="colorTabsContainer" class="mb-0">
+                    <div class="border-b border-gray-300">
+                        <nav class="-mb-px flex space-x-1 sm:space-x-2 overflow-x-auto pb-px" aria-label="Tabs">
+                            <button data-tab="roi-data" class="tab-button active">Dados ROI</button>
+                            <button data-tab="analysis-calibration" class="tab-button">Curva Analítica</button>
+                            <button data-tab="samples" class="tab-button">Amostras</button>
+                        </nav>
+                    </div>
+                </div>
+
+                <div id="tabContentContainer" class="flex-grow mt-1 flex flex-col"> 
+                    <div id="tab-roi-data" class="tab-pane flex-grow">
+                        <div class="flex justify-between items-center mb-2 pt-2">
+                            <h3 class="text-md font-semibold text-gray-700">Lista de ROIs</h3>
+                        </div>
+                        <div id="roiCardsContainer" class="space-y-3"></div>
+                        <div id="noRoiMessage" class="text-center p-4 text-gray-500">Nenhuma ROI criada ainda.</div>
+                    </div>
+                    
+                    <div id="tab-analysis-calibration" class="tab-pane hidden">
+
+                        <div id="analysisStaleWarning" class="hidden p-3 mb-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-md text-sm">
+                            ⚠️ As ROIs foram modificadas. Para garantir a consistência dos dados, por favor, recalcule as métricas.
+                        </div>
+                        
+                        <div class="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                            <label for="analysisTitleInput" class="block text-sm font-medium text-gray-700">Identificação da Análise (Opcional):</label>
+                            <div id="analysisTitleInput" class="form-input mt-1 block w-full cursor-pointer bg-white h-9 py-2 px-3">
+                                <span class="text-gray-400 italic">Clique para definir um título...</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Este título aparecerá no gráfico e no relatório em PDF.</p>
+                        </div>
+
+                        <fieldset id="step1Wrapper" class="analysis-section">
+                            <h3 class="text-lg font-semibold mb-3 text-gray-700">Passo 1: Calcular Métricas</h3>
+                            <div id="step1Content">
+                                <p class="text-sm text-gray-600 mb-3">Clique no botão para calcular todas as respostas analíticas. Isso é necessário para habilitar os próximos passos.</p>
+                                <button id="calculateAllMetricsButton" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-md">Calcular Todas as Métricas</button>
+                            </div>
+                        </fieldset>
+                        
+                        <fieldset id="step2Wrapper" class="analysis-section" disabled>
+                            <h3 class="text-lg font-semibold mb-3 text-gray-700">Passo 2: Selecionar o Sinal (Eixo Y)</h3>
+                            <p id="step2Blocker" class="text-center text-gray-500 italic p-4 bg-gray-50 rounded-md">Selecione ao menos um parâmetro no Passo 2 para continuar.</p>
+                            <div id="step2Content" class="hidden">
+                                <p class="text-sm text-gray-600 mb-3">Selecione um ou mais sinais analíticos para usar como Eixo Y na construção da curva.</p>
+                                <button id="openSignalSelectorModalButton" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-md">
+                                    Selecionar Sinais (Parâmetros)
+                                </button>
+                            </div>
+                            </fieldset>
+                        
+                        <fieldset id="step3Wrapper" class="analysis-section" disabled>
+                            <h3 class="text-lg font-semibold mb-3 text-gray-700">Passo 3: Construir a Curva (Pontos de Calibração)</h3>
+                            <p id="step3Blocker" class="text-center text-gray-500 italic p-4 bg-gray-50 rounded-md">Selecione ao menos um parâmetro no Passo 2 para continuar.</p>
+                            <div id="step3Content" class="hidden">
+                                <div class="mb-4">
+                                    <button id="defineRoiOrderButton" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md text-sm disabled:opacity-50" disabled>Ordenar ROIs de Calibração...</button>
+                                    <p class="text-xs text-center text-gray-500 mt-1">Clique para ordenar os pontos da curva por toque ou por padrão de grade.</p>
+                                </div>
+                                <div class="border-t my-4"></div>
+                                <div class="mb-4">
+                                    <label for="concentrationUnitSelect" class="block text-sm font-medium text-gray-700 mb-1">Unidade de Concentração:</label>
+                                    <select id="concentrationUnitSelect" class="form-select w-full sm:w-auto">
+                                        <option value="mg/L">mg/L</option><option value="g/L">g/L</option><option value="mol/L">mol/L</option><option value="mmol/L">mmol/L</option><option value="μmol/L">μmol/L</option><option value="adimensional">Adimensional</option>
+                                    </select>
+                                </div>
+                                <div id="calibrationTableWrapper" class="table-container">
+                                    <table id="calibrationSetupTable" class="min-w-full text-xs">
+                                        </table>
+                                </div>
+                                <div class="mt-4 text-right">
+                                    <button id="clearConcentrationsButton" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 text-xs rounded-md">Limpar Concentrações</button>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <fieldset id="step4Wrapper" class="analysis-section" disabled>
+                            <h3 class="text-lg font-semibold mb-3 text-gray-700">Passo 4: Gerar Curva Analítica e Visualizar Modelos</h3>
+                             <p id="step4Blocker" class="text-center text-gray-500 italic p-4 bg-gray-50 rounded-md">Defina ao menos 2 pontos de calibração no Passo 3 para gerar a curva.</p>
+                            <div id="step4Content" class="hidden">
+                                <button id="generateCalibrationCurveButton" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-md">Gerar Curva Analítica</button>
+                                
+                                <div id="regressionViewModeContainer" class="hidden my-4 p-3 bg-gray-50 border rounded-lg">
+                                    <fieldset>
+                                        <legend class="text-sm font-medium text-gray-700 mb-2">Modo de Visualização do Gráfico:</legend>
+                                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                                            <div>
+                                                <input type="radio" id="viewModeBest" name="regressionViewMode" value="best" checked class="form-radio h-4 w-4 text-sky-600 focus:ring-sky-500">
+                                                <label for="viewModeBest" class="ml-2 text-gray-800 cursor-pointer">Melhores Ajustes</label>
+                                            </div>
+                                            <div>
+                                                <input type="radio" id="viewModeLinear" name="regressionViewMode" value="linear" class="form-radio h-4 w-4 text-sky-600 focus:ring-sky-500">
+                                                <label for="viewModeLinear" class="ml-2 text-gray-800 cursor-pointer">Apenas Linear</label>
+                                            </div>
+                                            <div>
+                                                <input type="radio" id="viewModePoly" name="regressionViewMode" value="polynomial" class="form-radio h-4 w-4 text-sky-600 focus:ring-sky-500">
+                                                <label for="viewModePoly" class="ml-2 text-gray-800 cursor-pointer">Apenas Polinomial</label>
+                                            </div>
+                                            <div>
+                                                <input type="radio" id="viewModeBoth" name="regressionViewMode" value="comparative" class="form-radio h-4 w-4 text-sky-600 focus:ring-sky-500">
+                                                <label for="viewModeBoth" class="ml-2 text-gray-800 cursor-pointer">Comparativo (Ambas)</label>
+                                            </div>
+                                        </div>
+                                    </fieldset>
+                                </div>
+                                <div id="regressionEquationsContainer" class="regression-list-container text-sm my-3 p-3 bg-gray-50 rounded-md border hidden">
+                                </div>
+                                <div id="calibrationChartCanvasContainer"><canvas id="calibrationChartCanvas"></canvas></div>
+                                <div class="flex items-center flex-wrap gap-3 mt-3">
+                                    <button id="clearChartButton" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md text-sm disabled:bg-gray-300" disabled>Limpar Gráfico</button>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <fieldset id="step5Wrapper" class="analysis-section" disabled>
+                            <h3 class="text-lg font-semibold mb-3 text-gray-700">Passo 5: Identificar Amostras e Prever Concentrações</h3>
+                            <p id="step5Blocker" class="text-center text-gray-500 italic p-4 bg-gray-50 rounded-md">Gere uma curva analítica no Passo 4 para continuar.</p>
+                            <div id="step5Content" class="hidden">
+                                <p class="text-sm text-gray-600 mb-3">Descreva suas amostras abaixo. A descrição será usada nos relatórios.</p>
+                                <div id="sampleIdentificationContainer">
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <div id="finalActionsWrapper" class="analysis-section border-none pb-0 mb-0 hidden">
+                             <h3 class="text-lg font-semibold mb-3 text-gray-700">Ações Finais</h3>
+                             <div class="flex items-center flex-wrap gap-3 mt-3">
+                                <button id="exportXlsxButton" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md text-sm disabled:bg-gray-300" disabled>Exportar para Excel</button>
+                                <button id="exportPdfButton" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md text-sm disabled:bg-gray-300" disabled>Gerar Relatório PDF</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div id="tab-samples" class="tab-pane hidden">
+                        <h3 class="text-md font-semibold mb-3 text-gray-700">Previsão de Concentração para Amostras</h3>
+                        <div id="sampleResultsContainer" class="space-y-4">
+                            <p class="text-sm text-gray-500">Marque uma ou mais ROIs como "Amostra" e gere uma curva analítica para ver as previsões aqui.</p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="mt-4 pt-4 border-t">
+                     <h3 class="text-md font-semibold mb-3 text-gray-700">Ações Globais</h3>
+                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
+                         <button id="saveSessionButton" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-400" disabled>Salvar Sessão 💾</button>
+                         <button id="loadSessionButton" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-400">Carregar Sessão 🔄</button>
+                         <button id="deleteAllRoisButton" class="w-full bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-md disabled:bg-gray-300 sm:col-span-2 lg:col-span-2" disabled>Excluir Todas as ROIs</button>
+                     </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <div id="focus-mode-toolbar" class="hidden"></div>
+    <div id="detectionInstructionPanel" class="hidden fixed top-0 left-0 right-0 p-3 flex justify-center items-center bg-sky-600 text-white shadow-lg z-[2101]">
+        <div class="container mx-auto flex justify-between items-center">
+            <p id="detectionInstructionText" class="text-md font-semibold"></p>
+            <div id="gridAdjustmentControls" class="hidden flex items-center space-x-2">
+                <button id="cancelGridButton" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">Cancelar</button>
+                <button id="confirmGridButton" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md">Confirmar Grade</button>
+            </div>
+             <button id="cancelInstructionButton" class="hidden px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="roiContextMenu" class="hidden absolute z-50">
+        <div class="flex items-center bg-gray-800 bg-opacity-80 backdrop-blur-sm text-white rounded-lg shadow-2xl overflow-hidden border border-gray-600">
+            <button id="contextMenuSetSample" title="Definir como Amostra" class="p-3 hover:bg-purple-600 transition-colors duration-150">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v4.512a2 2 0 00.485 1.29l.905.905a2 2 0 01.328 1.414V19l-2-2-2 2v-2.121a2 2 0 01-.328-1.414l.905-.905A2 2 0 008 10.512V5L7 4z"></path></svg>
+            </button>
+            <div class="w-px h-6 bg-gray-600"></div> 
+            <button id="contextMenuSetWhite" title="Definir como Branco Analítico" class="p-3 hover:bg-green-600 transition-colors duration-150">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+            </button>
+            <div class="w-px h-6 bg-gray-600"></div> 
+            <button id="contextMenuLock" title="Travar / Destravar" class="p-3 hover:bg-yellow-600 transition-colors duration-150">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </button>
+            <div class="w-px h-6 bg-gray-600"></div> 
+            <button id="contextMenuDelete" title="Excluir ROI" class="p-3 hover:bg-red-600 transition-colors duration-150">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+        </div>
+    </div>
+    <div id="toast-notification" class="hidden fixed bottom-5 right-5 w-auto max-w-sm bg-gray-800 text-white p-4 rounded-lg shadow-lg flex items-center space-x-4 z-[3000]">
+        <span id="toast-text" class="flex-grow"></span>
+        <button id="toast-close-button" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-md text-sm font-medium">OK</button>
+    </div>
+
+    <div id="messageModal" class="modal"><div class="modal-content modal-content-sm"><span class="close-button" id="closeGeneralModalButton">&times;</span><div class="flex items-center"><div id="loadingSpinner" class="hidden w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mr-3"></div><p id="modalMessageText" class="text-gray-700"></p></div></div></div>
+    <div id="editRoiNameModal" class="modal"><div class="modal-content modal-content-sm"><span class="close-button" id="closeEditRoiNameModalButton">&times;</span><h3 class="text-lg font-semibold mb-3 text-gray-800">Editar Nome da ROI</h3><input type="text" id="editRoiNameInput" class="form-input w-full mb-2" placeholder="Novo nome para a ROI"><p id="editRoiNameError" class="text-xs text-red-500 mb-3"></p><div class="flex justify-end space-x-2"><button id="cancelEditRoiNameModalButton" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button><button id="saveRoiNameButton" class="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700">Salvar</button></div></div></div>
+    <div id="concentrationModal" class="modal"><div class="modal-content modal-content-sm"><form id="concentrationForm"><span class="close-button" id="closeConcentrationModalButton">&times;</span><h3 class="text-lg font-semibold mb-3 text-gray-800">Definir Concentração</h3><p class="text-sm text-gray-600 mb-2">Insira o valor da concentração para a ROI <strong id="concentrationModalRoiName"></strong>:</p><input type="number" id="concentrationInput" class="form-input w-full mb-2" placeholder="Ex: 0.5" step="any"><p id="concentrationModalError" class="text-xs text-red-500 mb-3"></p><div class="flex justify-end space-x-2"><button type="button" id="cancelConcentrationButton" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancelar</button><button type="submit" id="confirmConcentrationButton" class="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700">Confirmar</button></div></form></div></div>
+    <div id="settingsModal" class="modal"><div class="modal-content modal-content-md"><span class="close-button" id="closeSettingsModalButton">&times;</span><h3 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-800">Configurações do Perfil do Relatório</h3><div class="space-y-4"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label for="analystNameInput" class="block text-sm font-medium text-gray-700">Nome do Analista/Pesquisador</label><input type="text" id="analystNameInput" class="form-input mt-1 block w-full" placeholder="Ex: Prof. Dr. Nome Sobrenome"></div><div><label for="operatorRoleInput" class="block text-sm font-medium text-gray-700">Cargo/Função</label><input type="text" id="operatorRoleInput" class="form-input mt-1 block w-full" placeholder="Ex: Pesquisador de Doutorado"></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label for="labNameInput" class="block text-sm font-medium text-gray-700">Nome do Laboratório</label><input type="text" id="labNameInput" class="form-input mt-1 block w-full" placeholder="Ex: Lab de Análises Químicas"></div><div><label for="institutionNameInput" class="block text-sm font-medium text-gray-700">Nome da Instituição</label><input type="text" id="institutionNameInput" class="form-input mt-1 block w-full" placeholder="Ex: Universidade Federal"></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-gray-700 mb-1">Logo do Laboratório</label><input type="file" id="labLogoUpload" class="hidden" accept="image/png, image/jpeg"><label for="labLogoUpload" class="file-upload-label w-full text-center">Carregar Imagem</label><div id="labLogoPreview" class="mt-2 logo-preview"><span>Pré-visualização</span></div></div><div><label class="block text-sm font-medium text-gray-700 mb-1">Logo da Instituição</label><input type="file" id="institutionLogoUpload" class="hidden" accept="image/png, image/jpeg"><label for="institutionLogoUpload" class="file-upload-label w-full text-center">Carregar Imagem</label><div id="institutionLogoPreview" class="mt-2 logo-preview"><span>Pré-visualização</span></div></div></div><div class="pt-4 border-t"><h4 class="text-lg font-semibold mb-3 text-gray-800">Informações de Contato (Opcional)</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label for="contactEmailInput" class="block text-sm font-medium text-gray-700">E-mail de Contato</label><input type="email" id="contactEmailInput" class="form-input mt-1 block w-full" placeholder="contato@lab.com"></div><div><label for="contactPhoneInput" class="block text-sm font-medium text-gray-700">Telefone</label><input type="text" id="contactPhoneInput" class="form-input mt-1 block w-full" placeholder="+55 (00) 12345-6789"></div></div></div><div class="pt-4 border-t flex justify-end space-x-3"><button id="cancelSettingsButton" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button><button id="saveSettingsButton" class="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700">Salvar Perfil</button></div></div></div></div>
+    <div id="reportDetailsModal" class="modal"><div class="modal-content modal-content-md"><span class="close-button" id="closeReportDetailsModalButton">&times;</span><h3 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-800">Detalhes para o Relatório PDF</h3><div class="space-y-4"><p class="text-sm text-gray-600">Preencha os campos abaixo específicos para esta análise.</p><div><label for="sampleIdInput" class="block text-sm font-medium text-gray-700">Identificação da Amostra/Lote <span class="text-red-500">*</span></label><input type="text" id="sampleIdInput" class="form-input mt-1 block w-full" placeholder="Ex: Amostra de Rio, Lote 123-A"></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label for="reportIdInput" class="block text-sm font-medium text-gray-700">Código do Relatório (Opcional)</label><input type="text" id="reportIdInput" class="form-input mt-1 block w-full" placeholder="Ex: REL-2025-001"></div><div><label for="analysisLocationInput" class="block text-sm font-medium text-gray-700">Local da Análise (Opcional)</label><input type="text" id="analysisLocationInput" class="form-input mt-1 block w-full" placeholder="Ex: Laboratório 1, Campo"></div></div><div><label for="applicationAreaInput" class="block text-sm font-medium text-gray-700">Área de Aplicação/Projeto (Opcional)</label><input type="text" id="applicationAreaInput" class="form-input mt-1 block w-full" placeholder="Ex: Monitoramento Ambiental de Cobre"></div><div class="pt-3 border-t"><label for="includeImageInReport" class="flex items-center cursor-pointer"><input type="checkbox" id="includeImageInReport" class="form-checkbox" checked><span class="ml-2 text-sm text-gray-700">Adicionar imagem da análise no relatório</span></label></div><p id="reportDetailsError" class="text-sm text-red-600 hidden">O campo "Identificação da Amostra" é obrigatório.</p><div class="pt-4 border-t flex justify-end space-x-3"><button id="cancelReportDetailsButton" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button><button id="confirmAndGeneratePdfButton" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Gerar PDF</button></div></div></div></div>
+    <div id="textInputModal" class="modal"><div class="modal-content modal-content-sm"><form id="textInputForm"><span class="close-button" id="closeTextInputModalButton">&times;</span><h3 id="textInputModalTitle" class="text-lg font-semibold mb-3 text-gray-800">Editar Texto</h3><input type="text" id="textInputModalInput" class="form-input w-full mb-2" placeholder="Digite o texto aqui..."><p id="textInputModalError" class="text-xs text-red-500 mb-3"></p><div class="flex justify-end space-x-2"><button type="button" id="cancelTextInputModalButton" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancelar</button><button type="submit" id="confirmTextInputModalButton" class="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700">Salvar</button></div></form></div></div>
+    <div id="autoRoiSettingsModal" class="modal hidden"><div class="modal-content modal-content-md"><span class="close-button" id="cancelAutoRoiSettings">&times;</span><h3 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-800">Ajustes da Detecção Automática</h3><p class="text-sm text-gray-600 mb-5">Ajuste os parâmetros do OpenCV para encontrar os pontos circulares na imagem. A detecção funciona melhor em imagens com bom contraste entre os pontos e o fundo.</p><div class="space-y-5"><div><label for="saturationSlider" class="block text-sm font-medium text-gray-700">Saturação Mínima (filtra áreas cinzas/brancas)</label><p class="text-xs text-gray-500 mb-2">Filtra ruídos e áreas de baixa cor. Aumente se o fundo for acinzentado.</p><div class="flex items-center space-x-4"><input type="range" id="saturationSlider" min="0" max="100" value="40" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"><span id="saturationValue" class="text-sm font-mono text-gray-600 w-24 text-right">Valor: 40</span></div></div><div><label for="brightnessSlider" class="block text-sm font-medium text-gray-700">Brilho Mínimo (filtra áreas escuras)</label><p class="text-xs text-gray-500 mb-2">Ajuda a separar os pontos de fundos escuros ou sombras.</p><div class="flex items-center space-x-4"><input type="range" id="brightnessSlider" min="0" max="100" value="30" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"><span id="brightnessValue" class="text-sm font-mono text-gray-600 w-24 text-right">Valor: 30</span></div></div><div><label for="minAreaSlider" class="block text-sm font-medium text-gray-700">Área Mínima do Ponto (em pixels)</label><p class="text-xs text-gray-500 mb-2">Ignora pequenos ruídos e artefatos. Aumente se estiver detectando pontos indesejados muito pequenos.</p><div class="flex items-center space-x-4"><input type="range" id="minAreaSlider" min="10" max="5000" value="100" step="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"><span id="minAreaValue" class="text-sm font-mono text-gray-600 w-24 text-right">Valor: 100</span></div></div><div><label for="circularitySlider" class="block text-sm font-medium text-gray-700">Circularidade Mínima (filtra formas não redondas)</label><p class="text-xs text-gray-500 mb-2">Filtra formas que não são circulares. Um círculo perfeito tem valor 1.0.</p><div class="flex items-center space-x-4"><input type="range" id="circularitySlider" min="0.1" max="1.0" value="0.75" step="0.01" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"><span id="circularityValue" class="text-sm font-mono text-gray-600 w-24 text-right">Valor: 0.75</span></div></div></div><div class="pt-5 mt-5 border-t flex justify-end space-x-3"><button id="runDetectionWithSettings" class="px-5 py-2 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 font-semibold">Detectar Pontos</button></div></div></div>
+    <div id="gridDimensionsModal" class="modal"><div class="modal-content modal-content-sm"><span class="close-button" id="closeGridDimensionsModalButton">&times;</span><h3 class="text-lg font-semibold mb-4 text-gray-800">Dimensões da Grade</h3><form id="gridDimensionsForm"><div class="space-y-4"><div><label for="gridRowsInput" class="block text-sm font-medium text-gray-700">Número de Linhas:</label><input type="number" id="gridRowsInput" class="form-input mt-1 block w-full" placeholder="Ex: 3" min="2" value="3"></div><div><label for="gridColsInput" class="block text-sm font-medium text-gray-700">Número de Colunas:</label><input type="number" id="gridColsInput" class="form-input mt-1 block w-full" placeholder="Ex: 5" min="2" value="5"></div></div><p id="gridDimensionsError" class="text-xs text-red-500 mt-3 hidden"></p><div class="mt-5 pt-4 border-t flex justify-end space-x-2"><button type="button" id="cancelGridDimensionsButton" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button><button type="submit" id="confirmGridDimensionsButton" class="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700">Confirmar</button></div></form></div></div>
+    <div id="confirmationModal" class="modal"><div class="modal-content modal-content-sm"><span class="close-button" id="closeConfirmationModalButton">&times;</span><h3 id="confirmationModalTitle" class="text-lg font-semibold mb-3 text-gray-800">Confirmar Ação</h3><p id="confirmationModalMessage" class="text-sm text-gray-600 mb-5">Você tem certeza que deseja prosseguir?</p><div class="flex justify-end space-x-3"><button id="cancelConfirmationButton" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 font-medium">Cancelar</button><button id="confirmConfirmationButton" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 font-medium">Confirmar</button></div></div></div>
+    
+    <div id="signalSelectorModal" class="modal">
+        <div class="modal-content modal-content-md">
+            <span class="close-button" id="closeSignalSelectorModalButton">&times;</span>
+            <h3 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-800">Painel de Seleção de Sinais (Eixo Y)</h3>
+            
+            <div class="sticky top-0 bg-white py-2 -mt-2 z-10">
+                <input type="search" id="signalSearchInput" class="form-input w-full mb-3" placeholder="Buscar por nome da métrica (ex: NDI, L*, Razão...)">
+                <div class="flex flex-wrap gap-2 text-xs mb-3 border-b pb-3">
+                    <button id="selectAllSignalsButton" class="px-3 py-1 bg-green-100 text-green-800 rounded-full hover:bg-green-200 font-semibold">Marcar Todos</button>
+                    <button id="selectAllVisibleSignalsButton" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 font-semibold">Marcar Visíveis</button>
+                    <button id="unselectAllVisibleSignalsButton" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 font-semibold">Desmarcar Visíveis</button>
+                    <button id="clearAllSignalSelectionsButton" class="px-3 py-1 bg-gray-200 text-gray-800 rounded-full hover:bg-gray-300 font-semibold">Limpar Todas as Seleções</button>
+                </div>
+            </div>
+
+            <div id="signalSelectorContainer" class="space-y-2 max-h-[50vh] overflow-y-auto">
+                <p class="text-center text-gray-500 p-8">Carregando parâmetros...</p>
+            </div>
+
+            <div class="mt-5 pt-4 border-t flex justify-end">
+                <button id="confirmSignalSelectionButton" class="px-5 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 font-semibold">Confirmar</button>
+            </div>
+        </div>
+    </div>
+    <div id="advancedSequenceModal" class="modal"><div class="modal-content modal-content-md"><span class="close-button" id="closeAdvancedSequenceModalButton">&times;</span><h3 class="text-xl font-semibold mb-4 border-b pb-2 text-gray-800">Painel de Controle de Ordenação</h3><p class="text-sm text-gray-600 mb-4">Configure como a ordenação automática deve ser executada para as ROIs de calibração.</p><form id="advancedSequenceForm" class="space-y-4"><fieldset><legend class="text-md font-semibold text-gray-700 mb-2">1. Padrão Principal de Leitura</legend><div class="flex gap-4"><label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400"><input type="radio" name="sequence_pattern" id="sequencePatternHorizontal" value="horizontal" class="form-radio mr-3 text-blue-600 focus:ring-blue-500" checked><span>Horizontal (Linha por linha)</span></label><label class="flex items-center p-3 border rounded-lg cursor-pointer flex-1 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400"><input type="radio" name="sequence_pattern" id="sequencePatternVertical" value="vertical" class="form-radio mr-3 text-blue-600 focus:ring-blue-500"><span>Vertical (Coluna por coluna)</span></label></div></fieldset><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><fieldset><legend class="text-md font-semibold text-gray-700 mb-2">2. Direção Principal</legend><div id="scanDirectionContainer" class="space-y-2"></div></fieldset><fieldset id="readDirectionFieldset"><legend class="text-md font-semibold text-gray-700 mb-2">3. Sentido da Leitura</legend><div id="readDirectionContainer" class="space-y-2"></div></fieldset></div><fieldset><legend class="text-md font-semibold text-gray-700 mb-2">Opção Adicional</legend><label class="flex items-center p-3 border rounded-lg cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400"><input type="checkbox" id="sequenceSerpentineToggle" class="form-checkbox mr-3 text-blue-600 focus:ring-blue-500">Modo Serpentina (Zigue-zague)</label></fieldset><div class="mt-6 pt-4 border-t flex flex-col sm:flex-row justify-between items-center gap-4"><button type="button" id="advancedSequenceByTouch" class="text-sm text-blue-600 hover:underline w-full sm:w-auto text-center sm:text-left">Ou, ordenar por toque manual...</button><div class="flex space-x-3"><button type="button" id="cancelAdvancedSequenceButton" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button><button type="submit" id="confirmAdvancedSequenceButton" class="px-5 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 font-semibold">Aplicar Ordem</button></div></div></form></div></div>
+
+    <div id="metricInfoModal" class="modal">
+        <div class="modal-content modal-content-sm">
+            <span class="close-button" id="closeMetricInfoModalButton">&times;</span>
+            <h3 id="metricInfoModalTitle" class="text-xl font-semibold mb-3 border-b pb-2 text-gray-800">Detalhes da Métrica</h3>
+            <div class="space-y-4">
+                <div>
+                    <strong class="block text-sm font-medium text-gray-600">Fórmula:</strong>
+                    <p id="metricInfoFormula" class="mt-1 text-sm p-2 bg-gray-100 rounded-md font-mono"></p>
+                </div>
+                <div>
+                    <strong class="block text-sm font-medium text-gray-600">Descrição e Propósito:</strong>
+                    <p id="metricInfoDescription" class="mt-1 text-sm text-gray-700 leading-relaxed"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="bg-sky-700 text-white text-center p-3 text-sm">
+        <p>&copy; <span id="currentYear"></span> Seu Projeto. Todos os direitos reservados.</p>
+    </footer>
+
+    
+    <script>
+        // Script para definir a variável CSS --vh para corrigir problemas de 100vh em mobile
+        function setVhProperty() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        setVhProperty();
+        window.addEventListener('resize', setVhProperty);
+        window.addEventListener('orientationchange', setVhProperty);
+
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('Service Worker: Registrado'))
+                    .catch(err => console.log(`Service Worker: Erro: ${err}`));
+            });
+        }
+    </script>
+</body>
+</html>

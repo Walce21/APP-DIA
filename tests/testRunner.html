@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executor de Testes - ScanLab</title>
+    <style>
+        body { font-family: 'Inter', sans-serif, system-ui; background-color: #111827; color: #e5e7eb; line-height: 1.6; padding: 20px; }
+        h1, h2 { color: #f9fafb; border-bottom: 1px solid #4b5563; padding-bottom: 10px; }
+        pre { background-color: #1f2937; padding: 15px; border-radius: 8px; white-space: pre-wrap; word-wrap: break-word; font-family: 'Courier New', Courier, monospace; }
+        .test-summary { margin-top: 20px; font-size: 1.2em; }
+        .pass { color: #4ade80; font-weight: bold; }
+        .fail { color: #f87171; font-weight: bold; }
+        .suite { border-left: 3px solid #6366f1; padding-left: 15px; margin-bottom: 20px; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <h1>Executor de Testes Unitários - ScanLab</h1>
+    <div id="results">
+        <p>Executando testes... Por favor, verifique o console do navegador (F12) para o status detalhado e os resultados dos `console.assert()`.</p>
+        <p>Abaixo está um resumo visual dos resultados.</p>
+    </div>
+    <pre id="summary-output"></pre>
+
+    <script type="module">
+        // Importa e executa os arquivos de teste
+        // Conforme criarmos mais arquivos de teste, eles serão importados aqui.
+        import './tests/utils.test.js';
+        import './tests/analysisManager.test.js';
+
+        // Lógica simples para resumir os resultados no HTML
+        document.addEventListener('DOMContentLoaded', () => {
+            const resultsDiv = document.getElementById('results');
+            const summaryOutput = document.getElementById('summary-output');
+            
+            // Substitui o console.log para capturar as saídas
+            const originalLog = console.log;
+            let summaryHTML = '';
+
+            console.log = function(...args) {
+                originalLog.apply(console, args); // Mantém o log original no console
+                
+                const message = args.map(arg => {
+                    if (typeof arg === 'object' && arg !== null) {
+                        return JSON.stringify(arg, null, 2);
+                    }
+                    return arg;
+                }).join(' ');
+                
+                if (message.includes('PASSOU')) {
+                    summaryHTML += `<span class="pass">${message}</span>\n`;
+                } else if (message.includes('FALHOU')) {
+                    summaryHTML += `<span class="fail">${message}</span>\n`;
+                } else {
+                     summaryHTML += `<span>${message}</span>\n`;
+                }
+                summaryOutput.innerHTML = summaryHTML;
+            };
+
+            originalLog('Testes carregados. Verifique o console para detalhes.');
+        });
+    </script>
+</body>
+</html>
